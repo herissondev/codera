@@ -3,8 +3,8 @@ import Config
 # Configure your database
 config :codera, Codera.Repo,
   username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
+  password: "password",
+  hostname: System.get_env("DATABASE_URL") || "agenova_db.orb.local",
   database: "codera_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
