@@ -55,11 +55,11 @@ defmodule Codera.AI.Agent do
 
     case result do
       {:ok, updated_chain} ->
-        %Agent{agent | chain: updated_chain}
+        {:ok, %Agent{agent | chain: updated_chain}}
 
       {:error, updated_chain?, error} ->
         Logger.error("Error while running chain #{inspect(error)}")
-        %Agent{agent | chain: updated_chain?}
+        {:error, %Agent{agent | chain: updated_chain?}, error}
     end
   end
 
