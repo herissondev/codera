@@ -18,6 +18,7 @@ defmodule CoderaWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    live "/chat", AgentChatLive, :index
   end
 
   # Other scopes may use custom stacks.
