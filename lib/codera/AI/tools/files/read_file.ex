@@ -35,10 +35,10 @@ defmodule Codera.AI.Tools.Files.ReadFile do
           default: 1
         })
       ],
-      function: &read_file/2
+      function: &read_file/2,
+      async: true
     })
   end
-
 
   def read_file(%{"path" => path} = args, _context) do
     with true <- String.starts_with?(path, "/") or {:error, "`path` must be absolute"},

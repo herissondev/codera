@@ -41,10 +41,10 @@ defmodule Codera.AI.Tools.Files.Glob do
           default: 0
         })
       ],
-      function: &glob/2
+      function: &glob/2,
+      async: true
     })
   end
-
 
   # ---------------------------------------------------------------------------
   # Callback

@@ -30,10 +30,10 @@ defmodule Codera.AI.Tools.Files.CreateFile do
           description: "Content to write to the file"
         })
       ],
-      function: &create_file/2
+      function: &create_file/2,
+      async: true
     })
   end
-
 
   # ---------------------------------------------------------------------------
   # Callback

@@ -21,10 +21,10 @@ defmodule Codera.AI.Tools.Files.ListDirectory do
           description: "Absolute directory path to list"
         })
       ],
-      function: &list_directory/2
+      function: &list_directory/2,
+      async: true
     })
   end
-
 
   # ---------------------------------------------------------------------------
   # Callback
