@@ -20,6 +20,20 @@ if System.get_env("PHX_SERVER") do
   config :codera, CoderaWeb.Endpoint, server: true
 end
 
+# AI provider configuration (OpenRouter)
+# We require OPENROUTER_API_KEY in all envs except :test.
+if config_env() != :test do
+  System.get_env("OPENROUTER_API_KEY") ||
+    raise "Missing OPENROUTER_API_KEY. Set it to your OpenRouter API key."
+end
+
+config :codera, :openrouter,
+  api_key: System.get_env("OPENROUTER_API_KEY"),
+  model: System.get_env("OPENROUTER_MODEL") || "openrouter/horizon-beta",
+  endpoint:
+    System.get_env("OPENROUTER_ENDPOINT") || "https://openrouter.ai/api/v1/chat/completions",
+  user: System.get_env("OPENROUTER_USER") || "Codera"
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
