@@ -62,7 +62,11 @@ defmodule Codera.MixProject do
       {:bandit, "~> 1.5"},
 
       # AI RELATED DEPS
-      {:langchain, "~> 0.4.0-rc.1"}
+      {:langchain, "~> 0.4.0-rc.1"},
+      {:text_diff, "~> 0.1.0"},
+
+      ## REST
+      {:friendlyid, "~> 0.2.0"}
     ]
   end
 

@@ -172,6 +172,7 @@ defmodule Codera.AI.Agent do
 
         {:ok, %Agent{agent | chain: updated_chain}}
 
+      # run until tool used ok result
       {:ok, updated_chain, _message} ->
         {:ok, %Agent{agent | chain: updated_chain}}
 

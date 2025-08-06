@@ -54,19 +54,30 @@ defmodule Codera.AI.Tools.Files.Glob do
     limit = Map.get(args, "limit")
     offset = Map.get(args, "offset", 0)
 
-    paths = Path.wildcard(pattern, match_dot: true)
+    # Handle empty or whitespace-only patterns
+    trimmed_pattern = String.trim(pattern)
 
-    sorted =
-      paths
-      |> Enum.map(fn p -> {p, file_mtime(p)} end)
-      |> Enum.sort_by(fn {_p, mtime} -> mtime end, {:desc, DateTime})
-      |> Enum.drop(offset)
-      |> maybe_take(limit)
-      |> Enum.map(fn {p, _} -> p end)
+    if trimmed_pattern == "" do
+      {:ok, "\n"}
+    else
+      paths = Path.wildcard(pattern, match_dot: true)
 
-    {:ok, Enum.join(sorted, "\n")}
+      sorted =
+        paths
+        |> Enum.map(fn p -> {p, file_mtime(p)} end)
+        |> Enum.sort_by(fn {_p, mtime} -> mtime end, {:desc, DateTime})
+        |> Enum.drop(offset)
+        |> maybe_take(limit)
+        |> Enum.map(fn {p, _} -> p end)
+
+      {:ok, Enum.join(sorted, "\n") <> "\n"}
+    end
   rescue
-    e in File.Error -> {:error, e.reason |> to_string()}
+    e in File.Error ->
+      {:error, e.reason |> to_string()}
+
+    e ->
+      {:error, "Pattern error: #{inspect(e)}"}
   end
 
   # ---------------------------------------------------------------------------

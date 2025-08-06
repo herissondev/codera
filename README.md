@@ -1,18 +1,30 @@
 # Codera
 
-To start your Phoenix server:
+An AI-assisted Phoenix application.
 
-* Run `mix setup` to install and setup dependencies
-* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+Quick start
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+1) Install deps and set up the project:
+   mix setup
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+2) Set your AI provider credentials (OpenRouter):
+   # Option A: use .env
+   cp .env.example .env
+   # add your key to .env, then
+   source .env
 
-## Learn more
+   # Option B: export directly
+   export OPENROUTER_API_KEY=your_key_here
 
-* Official website: https://www.phoenixframework.org/
-* Guides: https://hexdocs.pm/phoenix/overview.html
-* Docs: https://hexdocs.pm/phoenix
-* Forum: https://elixirforum.com/c/phoenix-forum
-* Source: https://github.com/phoenixframework/phoenix
+3) Start the server:
+   mix phx.server
+
+Visit http://localhost:4000
+
+Notes
+- Do not hardcode API keys in source code. Use environment variables as shown above.
+- For production, set environment variables via your deployment platform.
+
+Learn more
+- Phoenix: https://hexdocs.pm/phoenix/overview.html
+- LiveView: https://hexdocs.pm/phoenix_live_view

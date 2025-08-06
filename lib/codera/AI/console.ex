@@ -18,8 +18,11 @@ defmodule Codera.AI.Agent.Console do
   # ─────────────────────────────────────
 
   @doc "Boucle interactif : tapez exit / quit pour quitter."
-  def test do
+  def test(working_dir \\ "./") do
+    wd = Path.expand(working_dir)
+    File.cd!(wd)
     IO.puts("⚡ Chat interactif — « exit / quit » pour sortir.")
+    IO.puts("Working directory: #{wd}")
     config = CodingAgent.config()
 
     agent =
@@ -28,6 +31,8 @@ defmodule Codera.AI.Agent.Console do
       |> Agent.add_tools(Files.all_files_tools!())
       |> Agent.add_tools(Task.task_tool!())
 
+    v = DateTime.utc_now() |> Calendar.strftime("%Y%m%d-%H%M%S")
+    Process.put(:console_start_ts, v)
     loop(agent)
   end
 
@@ -36,11 +41,22 @@ defmodule Codera.AI.Agent.Console do
   ./debug/mardkwon/<name>_<id>.md et renvoie ce chemin.
   """
   @spec to_mardown(%Agent{}) :: binary()
-  def to_mardown(%Agent{name: name, id: id, chain: %LLMChain{} = ch}) do
+  def to_mardown(%Agent{name: name, id: _id, chain: %LLMChain{} = ch}) do
     File.mkdir_p!("./debug/mardkwon")
 
-    filename =
-      "./debug/mardkwon/#{sanitize(name)}_#{Base.encode16(id)}.md"
+    # Use a stable start-timestamp per agent process to keep path constant across saves.
+    ts =
+      case Process.get(:console_start_ts) do
+        nil ->
+          v = DateTime.utc_now() |> Calendar.strftime("%Y%m%d-%H%M%S")
+          Process.put(:console_start_ts, v)
+          v
+
+        v ->
+          v
+      end
+
+    filename = "./debug/mardkwon/#{ts}-#{sanitize(name)}.md"
 
     File.write!(filename, chain_to_md(ch))
     filename
@@ -67,6 +83,7 @@ defmodule Codera.AI.Agent.Console do
         case Agent.chat_response(agent, prompt) do
           {:ok, updated} ->
             Enum.each(updated.chain.exchanged_messages, &pretty_print/1)
+            _ = to_mardown(updated)
             loop(updated)
 
           {:error, _ag, err} ->
@@ -88,7 +105,16 @@ defmodule Codera.AI.Agent.Console do
 
   defp pretty_print(%Message{role: :assistant} = m) do
     Enum.each(m.tool_calls, &print_tool_call/1)
-    unless is_nil(m.content), do: put_line(:blue, "[assistant] #{join(m.content)}")
+
+    # Fold assistant text by default; allow quick glance of first line
+    if is_nil(m.content) do
+      :ok
+    else
+      txt = join(m.content)
+      _first_line = txt |> String.split("\n") |> List.first()
+      put_line(:blue, "[assistant] " <> txt)
+    end
+
     usage(m)
   end
 
@@ -103,7 +129,9 @@ defmodule Codera.AI.Agent.Console do
         other -> inspect(other)
       end
 
-    put_line(:light_black, "↪  (tool) #{n}: #{cmd}")
+    # Always show tool name; fold the rest (show truncated command)
+    truncated = if String.length(cmd) > 120, do: String.slice(cmd, 0, 120) <> "…", else: cmd
+    put_line(:light_black, "↪  (tool) #{n}: #{truncated}")
   end
 
   defp print_tool_result(%Message.ToolResult{name: n, content: c}) do
@@ -133,6 +161,10 @@ defmodule Codera.AI.Agent.Console do
     * Model: `#{ch.llm.model}`
     * Dump date: #{DateTime.utc_now() |> DateTime.to_iso8601()}
 
+    ## Index
+
+    #{build_index(msgs)}
+
     ---
     """
 
@@ -148,10 +180,13 @@ defmodule Codera.AI.Agent.Console do
          %Message{role: r, content: c, tool_calls: tc, tool_results: tr, metadata: md},
          i
        ) do
-    """
-    ## #{i}. #{role_label(r)}
+    id = "m#{i}"
+    header = "## <a id=\"#{id}\"></a>#{i}. #{role_label(r)}"
 
-    #{content_md(c, tc, tr)}
+    """
+    #{header}
+
+    #{content_md_collapsed(r, c, tc, tr)}
 
     #{usage_md(md)}
     """
@@ -163,14 +198,22 @@ defmodule Codera.AI.Agent.Console do
   defp role_label(:tool), do: "Tool"
   defp role_label(other), do: to_string(other)
 
-  defp content_md(c, tc, tr) do
-    # ← nouveau
+  defp build_index(msgs) do
+    msgs
+    |> Enum.with_index(1)
+    |> Enum.map(fn {m, i} ->
+      label = role_label(m.role)
+      "- [#{i}. #{label}](#m#{i})"
+    end)
+    |> Enum.join("\n")
+  end
+
+  defp content_md_collapsed(role, c, tc, tr) do
     tc = tc || []
-    # ← nouveau
     tr = tr || []
 
     [
-      maybe_text_md(c),
+      maybe_text_md_collapsed(role, c),
       Enum.map_join(tc, "\n", &tool_call_md/1),
       Enum.map_join(tr, "\n", &tool_result_md/1)
     ]
@@ -178,19 +221,45 @@ defmodule Codera.AI.Agent.Console do
     |> Enum.join("\n")
   end
 
-  defp maybe_text_md(nil), do: ""
+  defp maybe_text_md_collapsed(_role, nil), do: ""
 
-  defp maybe_text_md(parts),
+  defp maybe_text_md_collapsed(:system, parts),
+    do: collapsible_block("System prompt", Enum.map_join(parts, "", & &1.content), "text")
+
+  defp maybe_text_md_collapsed(role, parts) when role in [:assistant, :user] do
+    # Show assistant/user content directly (not collapsed)
+    Enum.map_join(parts, "", & &1.content) |> wrap("```text", "```")
+  end
+
+  defp maybe_text_md_collapsed(_role, parts),
     do: Enum.map_join(parts, "", & &1.content) |> wrap("```text", "```")
+
+  defp collapsible_block(summary, body_text, lang) do
+    code_open = "```" <> (lang || "text")
+    body = wrap(code_open, body_text <> "\n````")
+    "<details><summary>#{escape_summary(summary)}</summary>\n\n" <> body <> "\n\n</details>"
+  end
+
+  defp escape_summary(s) do
+    s
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+  end
 
   defp tool_call_md(%Message.ToolCall{name: n, arguments: a}) do
     args = inspect(a, pretty: true, limit: :infinity)
-    wrap("```tool-call #{n}", "#{args}\n```")
+    summary = "Tool call: #{n}"
+    body = wrap("```json", "#{args}\n````")
+
+    "<details><summary>#{summary}</summary>\n\n" <> body <> "\n\n</details>"
   end
 
   defp tool_result_md(%Message.ToolResult{name: n, content: c}) do
     txt = Enum.map_join(c, "", & &1.content)
-    wrap("```tool-result #{n}", "#{txt}\n```")
+    summary = "Tool result: #{n}"
+    body = wrap("```text", "#{txt}\n````")
+
+    "<details><summary>#{summary}</summary>\n\n" <> body <> "\n\n</details>"
   end
 
   defp usage_md(%{usage: u}),
