@@ -19,6 +19,7 @@ defmodule CoderaWeb.Router do
 
     get "/", PageController, :home
     live "/chat", AgentChatLive, :index
+    live "/thread", ThreadLive, :index
   end
 
   # Other scopes may use custom stacks.
