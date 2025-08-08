@@ -29,7 +29,7 @@ end
 
 config :codera, :openrouter,
   api_key: System.get_env("OPENROUTER_API_KEY"),
-  model: System.get_env("OPENROUTER_MODEL") || "openrouter/horizon-beta",
+  model: System.get_env("OPENROUTER_MODEL") || "openai/gpt-5",
   endpoint:
     System.get_env("OPENROUTER_ENDPOINT") || "https://openrouter.ai/api/v1/chat/completions",
   user: System.get_env("OPENROUTER_USER") || "Codera"
