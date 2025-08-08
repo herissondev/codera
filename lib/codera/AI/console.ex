@@ -43,6 +43,7 @@ defmodule Codera.AI.Agent.Console do
   @spec to_mardown(%Agent{}) :: binary()
   def to_mardown(%Agent{name: name, id: _id, chain: %LLMChain{} = ch}) do
     File.mkdir_p!("./debug/mardkwon")
+    File.mkdir_p!("./debug/messages")
 
     # Use a stable start-timestamp per agent process to keep path constant across saves.
     ts =
@@ -58,7 +59,12 @@ defmodule Codera.AI.Agent.Console do
 
     filename = "./debug/mardkwon/#{ts}-#{sanitize(name)}.md"
 
+    message_export = "./debug/messages/#{ts}-#{sanitize(name)}.ex"
+
     File.write!(filename, chain_to_md(ch))
+    IO.inspect(ch.messages, limit: :infinity, pretty: true)
+    File.write!(message_export, :erlang.term_to_binary(ch.messages))
+
     filename
   end
 
