@@ -18,7 +18,6 @@ defmodule CoderaWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    live "/chat", AgentChatLive, :index
     live "/thread", ThreadLive, :index
     live "/thread/:thread_name", ThreadLive, :show
   end
