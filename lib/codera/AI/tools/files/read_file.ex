@@ -55,7 +55,10 @@ defmodule Codera.AI.Tools.Files.ReadFile do
 
       {:ok, lines}
     else
-      {:error, reason} -> {:error, to_string(reason)}
+      {:error, reason} ->
+        IO.puts("Error reading file: #{reason}")
+        IO.puts("With params: #{inspect(args)}")
+        {:error, to_string(reason)}
     end
   end
 end

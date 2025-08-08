@@ -1,5 +1,6 @@
 defmodule Codera.AI.Tools.Files do
   # alias Codera.AI.Tools.Files.ListFiles
+  alias Codera.AI.Tools.Files.CodebaseSearchAgent
   alias Codera.AI.Tools.Files.Glob
   alias Codera.AI.Tools.Files.CreateFile
   alias Codera.AI.Tools.Files.ListDirectory
@@ -12,8 +13,17 @@ defmodule Codera.AI.Tools.Files do
       EditFile.edit_file_tool!(),
       ListDirectory.list_directory_tool!(),
       CreateFile.create_file_tool!(),
-      Glob.glob_tool!()
+      Glob.glob_tool!(),
+      CodebaseSearchAgent.codebase_search_agent_tool!()
       # ListFiles.list_files_tool!()
+    ]
+  end
+
+  def read_only_tools!() do
+    [
+      ReadFile.read_file_tool!(),
+      ListDirectory.list_directory_tool!(),
+      Glob.glob_tool!()
     ]
   end
 end

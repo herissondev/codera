@@ -8,10 +8,17 @@ defmodule Codera.AI.Tools.Files.Glob do
 
   Results are **sorted by last modification time** (newest first) before pagination is
   applied. Each path is returned on its own line.
+
+  The search **always ignores** the following directories to keep results fast and tidy:
+  node_modules, deps, build, .git, .idea, .vscode, .cache, .log, .idea, .vscode, .cache, .log
+
+  If you want to see the content of one of these directories, use the `list_directory` tool.
   """
 
   alias LangChain.Function
   alias LangChain.FunctionParam
+
+  @ignore_dirs ~w(node_modules _build build .idea .vscode .cache .log deps .git .elixir_ls)
 
   # ---------------------------------------------------------------------------
   # Registration
@@ -58,9 +65,14 @@ defmodule Codera.AI.Tools.Files.Glob do
     trimmed_pattern = String.trim(pattern)
 
     if trimmed_pattern == "" do
-      {:ok, "\n"}
+      {:ok, "No pattern provided"}
     else
-      paths = Path.wildcard(pattern, match_dot: true)
+      ignore_re = build_ignore_regex()
+
+      paths =
+        trimmed_pattern
+        |> Path.wildcard(match_dot: true)
+        |> Enum.reject(&Regex.match?(ignore_re, &1))
 
       sorted =
         paths
@@ -70,13 +82,22 @@ defmodule Codera.AI.Tools.Files.Glob do
         |> maybe_take(limit)
         |> Enum.map(fn {p, _} -> p end)
 
-      {:ok, Enum.join(sorted, "\n") <> "\n"}
+      result =
+        case Enum.join(sorted, "\n") do
+          "" -> "Nothing found"
+          res -> res
+        end
+
+      {:ok, result}
     end
   rescue
     e in File.Error ->
+      IO.inspect(e)
+      IO.inspect("we are in rescue 1")
       {:error, e.reason |> to_string()}
 
     e ->
+      IO.inspect("we are in rescue 2")
       {:error, "Pattern error: #{inspect(e)}"}
   end
 
@@ -94,6 +115,18 @@ defmodule Codera.AI.Tools.Files.Glob do
       _ ->
         DateTime.from_unix!(0)
     end
+  end
+
+  defp build_ignore_regex do
+    extras =
+      @ignore_dirs
+      |> Enum.map(&Regex.escape/1)
+      |> Enum.join("|")
+
+    # \.[^/]+  -> any segment that starts with a dot (excluding “.” and “..” by virtue of +)
+    pattern = "(?:\\.[^/]+|#{extras})"
+
+    ~r/(^|\/)#{pattern}(\/|$)/
   end
 
   defp maybe_take(list, nil), do: list
