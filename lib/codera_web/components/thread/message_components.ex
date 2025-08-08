@@ -65,7 +65,7 @@ defmodule CoderaWeb.Thread.MessageComponents do
   def message_content(%{message: %{role: :system}} = assigns) do
     ~H"""
     <%= for {contentpart, _index} <- Enum.with_index(@message.content) do %>
-      <details class="collapse bg-base-100 border-base-300 border ">
+      <details class="collapse bg-base-100 border-base-300 border bg-white">
         <summary class="collapse-title font-semibold">Message système</summary>
         <div class="collapse-content text-sm">
           {contentpart.content}
@@ -78,8 +78,8 @@ defmodule CoderaWeb.Thread.MessageComponents do
   def message_content(%{message: %{role: :user}} = assigns) do
     ~H"""
     <%= for {contentpart, _index} <- Enum.with_index(@message.content) do %>
-      <div class="border border-gray-300 rounded p-3 bg-gray-100">
-        <div class="text-gray-800">
+      <div class="border border-gray-300 rounded p-3 bg-gray-100 max-w-9/10 float-right">
+        <div class="text-gray-800 float-right">
           {contentpart.content}
         </div>
       </div>
@@ -89,10 +89,10 @@ defmodule CoderaWeb.Thread.MessageComponents do
 
   def message_content(%{message: %{role: :assistant}} = assigns) do
     ~H"""
-    <div class="border border-blue-300 rounded p-3 bg-blue-50">
+    <div class="border border-blue-300 rounded p-3 bg-blue-50 max-w-9/10 float-left">
       <%= if @message.content do %>
         <%= for {contentpart, _index} <- Enum.with_index(@message.content) do %>
-          <div class="mb-2 text-gray-800">
+          <div class="text-gray-800">
             {contentpart.content}
           </div>
         <% end %>
