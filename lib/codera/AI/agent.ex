@@ -198,6 +198,17 @@ defmodule Codera.AI.Agent do
     end
   end
 
+  def add_message(%Agent{chain: %LLMChain{} = chain} = agent, %Message{} = message) do
+    new_chain = LLMChain.add_message(chain, message)
+
+    %Agent{agent | chain: new_chain}
+  end
+
+  def add_message(%Agent{} = agent, message) when is_binary(message) do
+    message_struct = Message.new_user!(message)
+    add_message(agent, message_struct)
+  end
+
   def add_tools(%Agent{chain: %LLMChain{} = chain} = agent, tools) do
     new_chain = LLMChain.add_tools(chain, tools)
 
@@ -283,28 +294,6 @@ defmodule Codera.AI.Agent do
   end
 
   def set_system_prompt(_agent, _), do: {:error, :invalid_system_message}
-
-  defp add_message(%Agent{chain: %LLMChain{} = chain} = agent, message) do
-    new_chain = LLMChain.add_message(chain, message)
-
-    Logger.debug(fn ->
-      meta = [agent_id: encode_id(agent), agent_name: agent.name, role: message.role]
-      {"agent.add_message", meta}
-    end)
-
-    :telemetry.execute(
-      [
-        :codera,
-        :ai,
-        :agent,
-        :add_message
-      ],
-      %{count: 1},
-      %{agent_id: encode_id(agent), agent_name: agent.name, role: message.role}
-    )
-
-    %Agent{agent | chain: new_chain}
-  end
 
   defp encode_id(%Agent{id: id}) when is_binary(id), do: Base.encode16(id)
   defp encode_id(_), do: nil

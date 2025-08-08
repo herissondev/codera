@@ -12,6 +12,9 @@ defmodule Codera.Application do
       Codera.Repo,
       {DNSCluster, query: Application.get_env(:codera, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Codera.PubSub},
+      # Thread management
+      {Registry, keys: :unique, name: Codera.AI.ThreadRegistry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Codera.AI.ThreadSupervisor},
       # Start a worker by calling: Codera.Worker.start_link(arg)
       # {Codera.Worker, arg},
       # Start to serve requests, typically the last entry
